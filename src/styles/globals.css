@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #ffffff;
+    --foreground: #171717;
+  }
+
+  body {
+    color: var(--foreground);
+    background: var(--background);
+    font-family:
+      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+      Arial, sans-serif;
+  }
+}
+
+@layer components {
+  .prose {
+    @apply max-w-none;
+  }
+
+  .prose pre {
+    @apply bg-gray-900 text-gray-100 rounded-lg overflow-x-auto p-4 text-sm leading-relaxed;
+  }
+
+  .prose code {
+    @apply bg-gray-100 text-red-600 px-1.5 py-0.5 rounded text-sm font-mono;
+  }
+
+  .prose pre code {
+    @apply bg-transparent text-gray-100 p-0;
+  }
+
+  .prose img {
+    @apply rounded-lg mx-auto;
+  }
+
+  .prose a {
+    @apply text-primary-600 hover:text-primary-800 underline;
+  }
+
+  .prose blockquote {
+    @apply border-l-4 border-gray-300 pl-4 italic text-gray-600;
+  }
+
+  .prose h1 {
+    @apply text-3xl font-bold mt-8 mb-4;
+  }
+
+  .prose h2 {
+    @apply text-2xl font-bold mt-6 mb-3;
+  }
+
+  .prose h3 {
+    @apply text-xl font-semibold mt-5 mb-2;
+  }
+
+  .prose ul {
+    @apply list-disc list-inside;
+  }
+
+  .prose ol {
+    @apply list-decimal list-inside;
+  }
+
+  .prose table {
+    @apply w-full border-collapse;
+  }
+
+  .prose th {
+    @apply border border-gray-300 bg-gray-50 px-4 py-2 text-left font-semibold;
+  }
+
+  .prose td {
+    @apply border border-gray-300 px-4 py-2;
+  }
+}
+
+/* Highlight.js theme overrides */
+.hljs {
+  background: transparent !important;
+}
+
+/* Markdown editor styles */
+.w-md-editor {
+  @apply border border-gray-300 rounded-lg !important;
+}
+
+.w-md-editor-toolbar {
+  @apply border-b border-gray-300 bg-gray-50 rounded-t-lg !important;
+}
+
+.w-md-editor-text {
+  @apply min-h-[400px] !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
