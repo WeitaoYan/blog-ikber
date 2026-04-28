@@ -7,9 +7,9 @@ import Giscus from '@/components/Giscus';
 // In production with Cloudflare Pages Functions, this would use SSR
 
 interface PostPageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 // Required for static export with dynamic routes
@@ -19,11 +19,12 @@ export function generateStaticParams() {
   return [];
 }
 
-export default function PostPage({ params }: PostPageProps) {
+export default async function PostPage({ params }: PostPageProps) {
+  const { slug } = await params;
   return (
     <article>
       {/* Post content will be loaded client-side */}
-      <PostContent slug={params.slug} />
+      <PostContent slug={slug} />
     </article>
   );
 }

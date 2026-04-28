@@ -4,10 +4,11 @@ import { requireAuth } from "@/lib/auth";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const id = parseInt(params.id);
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
     if (isNaN(id)) {
       return NextResponse.json({ error: "Invalid post ID" }, { status: 400 });
     }
@@ -28,7 +29,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const authenticated = await requireAuth(request);
   if (!authenticated) {
@@ -36,7 +37,8 @@ export async function PATCH(
   }
 
   try {
-    const id = parseInt(params.id);
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
     if (isNaN(id)) {
       return NextResponse.json({ error: "Invalid post ID" }, { status: 400 });
     }
@@ -74,7 +76,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const authenticated = await requireAuth(request);
   if (!authenticated) {
@@ -82,7 +84,8 @@ export async function DELETE(
   }
 
   try {
-    const id = parseInt(params.id);
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
     if (isNaN(id)) {
       return NextResponse.json({ error: "Invalid post ID" }, { status: 400 });
     }
