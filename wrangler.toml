@@ -1,6 +1,13 @@
 name = "blog-ikber"
-compatibility_date = "2024-04-05"
-pages_build_output_dir = ".next"
+compatibility_date = "2024-12-30"
+compatibility_flags = ["nodejs_compat"]
+
+main = ".open-next/worker.js"
+assets = { directory = ".open-next/assets", binding = "ASSETS" }
+
+services = [
+  { binding = "WORKER_SELF_REFERENCE", service = "blog-ikber" },
+]
 
 [[d1_databases]]
 binding = "DB"

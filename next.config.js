@@ -1,12 +1,12 @@
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
     unoptimized: true,
   },
-  experimental: {
-    // Required for Cloudflare Pages compatibility
-    workerThreads: false,
-  },
 };
 
-module.exports = nextConfig;
+initOpenNextCloudflareForDev();
+
+export default nextConfig;
