@@ -1,5 +1,5 @@
 name = "blog-ikber"
-compatibility_date = "2024-12-30"
+compatibility_date = "2026-04-28"
 compatibility_flags = ["nodejs_compat"]
 
 main = ".open-next/worker.js"
@@ -12,7 +12,7 @@ services = [
 [[d1_databases]]
 binding = "DB"
 database_name = "blog-db"
-database_id = "your-database-id"
+database_id = "0b92cec8-41fe-4354-b844-fea2e4c7024e"
 
 [[r2_buckets]]
 binding = "MY_BUCKET"
