@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
-import { getRecentPostsForRSS } from "@/lib/db";
+import { getRecentPostsForRSS, getAllSettings } from "@/lib/db";
 
 export async function GET() {
   try {
     const posts = await getRecentPostsForRSS(20);
+    
+    // 从数据库动态获取博客设置
+    const settings = await getAllSettings();
+    const blogTitle = settings.blogTitle || "My Blog";
+    const blogDescription = settings.blogDescription || "";
 
     const siteUrl = process.env.R2_PUBLIC_URL || "https://blog.example.com";
-    const blogTitle = "My Blog";
-    const blogDescription = "";
 
     const rssItems = posts
       .map(

@@ -3,18 +3,28 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
-import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 
 interface MDXRendererProps {
   content: string;
 }
+
+// 自定义白名单配置，允许安全的HTML标签
+const sanitizeSchema = {
+  ...defaultSchema,
+  tagNames: [
+    ...(defaultSchema.tagNames || []),
+    'details',
+    'summary',
+  ],
+};
 
 export function MDXRenderer({ content }: MDXRendererProps) {
   return (
     <div className="prose prose-lg max-w-none">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw, rehypeHighlight]}
+        rehypePlugins={[[rehypeSanitize, sanitizeSchema], rehypeHighlight]}
         components={{
           // Customize code blocks
           pre: ({ children, ...props }) => (
@@ -55,7 +65,7 @@ export function MDXRenderer({ content }: MDXRendererProps) {
           img: ({ src, alt, ...props }) => (
             <img
               src={src}
-              alt={alt || ''}
+              alt={alt || 'Image'}
               className="rounded-lg mx-auto max-w-full h-auto"
               loading="lazy"
               {...props}

@@ -3,6 +3,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
+interface BlogSettings {
+  donateWechat: string;
+  donateAlipay: string;
+  blogTitle: string;
+  blogDescription: string;
+}
+
 export default function SettingsPage() {
   const router = useRouter();
   const [donateWechat, setDonateWechat] = useState('');
@@ -28,16 +35,24 @@ export default function SettingsPage() {
         return;
       }
 
-      // For settings, we'll use a dedicated endpoint approach
-      // Since settings are stored in D1, we fetch them via a custom approach
-      // For now, we'll load from localStorage as fallback
-      const savedSettings = localStorage.getItem('blog_settings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
+      // Fetch settings from API
+      const settingsRes = await fetch('/api/settings');
+      if (settingsRes.ok) {
+        const settings: BlogSettings = await settingsRes.json();
         setDonateWechat(settings.donateWechat || '');
         setDonateAlipay(settings.donateAlipay || '');
         setBlogTitle(settings.blogTitle || 'My Blog');
         setBlogDescription(settings.blogDescription || '');
+      } else {
+        // Fallback to localStorage if API fails
+        const savedSettings = localStorage.getItem('blog_settings');
+        if (savedSettings) {
+          const settings: BlogSettings = JSON.parse(savedSettings);
+          setDonateWechat(settings.donateWechat || '');
+          setDonateAlipay(settings.donateAlipay || '');
+          setBlogTitle(settings.blogTitle || 'My Blog');
+          setBlogDescription(settings.blogDescription || '');
+        }
       }
     } catch (err) {
       setError('加载设置失败');
@@ -85,14 +100,32 @@ export default function SettingsPage() {
     setSuccess('');
 
     try {
-      const settings = {
+      const settings: BlogSettings = {
         donateWechat,
         donateAlipay,
         blogTitle,
         blogDescription,
       };
 
-      // Save to localStorage as fallback
+      // Save to database via API
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings),
+      });
+
+      if (res.status === 401) {
+        router.push('/admin/login');
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error('Failed to save settings');
+      }
+
+      // Also save to localStorage as cache
       localStorage.setItem('blog_settings', JSON.stringify(settings));
 
       setSuccess('设置已保存');

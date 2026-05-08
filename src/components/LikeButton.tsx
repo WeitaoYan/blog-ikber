@@ -20,7 +20,12 @@ export function LikeButton({ slug }: LikeButtonProps) {
           setCount(data.count);
         }
       })
-      .catch(console.error);
+      .catch((error) => {
+        // Only log in development
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to fetch like count:', error);
+        }
+      });
 
     // Check if already liked from cookie
     const cookies = document.cookie.split(';').map((c) => c.trim());
@@ -60,7 +65,10 @@ export function LikeButton({ slug }: LikeButtonProps) {
         setLiked(true);
       }
     } catch (error) {
-      console.error('Failed to like post:', error);
+      // Only log in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to like post:', error);
+      }
     } finally {
       setLoading(false);
     }

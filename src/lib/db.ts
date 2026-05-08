@@ -10,7 +10,7 @@ interface D1PreparedStatement {
   bind(...values: (string | null)[]): D1PreparedStatement;
   first<T = unknown>(col?: string): Promise<T | null>;
   all<T = unknown>(): Promise<{ results: T[]; success: boolean }>;
-  run(): Promise<{ success: boolean; meta: any }>;
+  run(): Promise<{ success: boolean; meta: Record<string, unknown> }>;
 }
 
 export interface Post {
@@ -58,14 +58,13 @@ export interface Setting {
 // In Cloudflare Pages Functions, bindings are available via context.env
 // For local development with wrangler, they are available via process.env
 function getDB(): D1Database {
-  // @ts-ignore - D1 binding injected by Cloudflare
+  // D1 binding injected by Cloudflare
   if (
     typeof process !== "undefined" &&
     process.env &&
-    (process.env as any).DB
+    (process.env as Record<string, unknown>).DB
   ) {
-    // @ts-ignore
-    return (process.env as any).DB as D1Database;
+    return (process.env as Record<string, unknown>).DB as D1Database;
   }
   throw new Error("D1 database binding (DB) is not available");
 }

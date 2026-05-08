@@ -33,7 +33,10 @@ export default function SearchPage() {
       const data = await res.json();
       setResults(data.results || []);
     } catch (error) {
-      console.error('Search failed:', error);
+      // Only log in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Search failed:', error);
+      }
       setResults([]);
     } finally {
       setLoading(false);

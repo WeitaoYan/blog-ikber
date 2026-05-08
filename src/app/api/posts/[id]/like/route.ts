@@ -57,7 +57,7 @@ export async function POST(
     likedPosts.push(slug);
     const response = NextResponse.json({ count });
     response.cookies.set(LIKED_POSTS_COOKIE, JSON.stringify(likedPosts), {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",

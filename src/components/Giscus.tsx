@@ -16,7 +16,10 @@ export default function Giscus() {
     const categoryId = process.env.NEXT_PUBLIC_GISCUS_CATEGORY_ID;
 
     if (!repo || !repoId || !category || !categoryId) {
-      console.warn('Giscus is not configured. Please set NEXT_PUBLIC_GISCUS_* environment variables.');
+      // Only warn in development
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Giscus is not configured. Please set NEXT_PUBLIC_GISCUS_* environment variables.');
+      }
       return;
     }
 

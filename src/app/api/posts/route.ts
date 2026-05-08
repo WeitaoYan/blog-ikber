@@ -42,9 +42,36 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { title, slug, content, excerpt, tags, published } = body;
 
+    // 验证必填字段
     if (!title || !slug || !content) {
       return NextResponse.json(
         { error: "Title, slug, and content are required" },
+        { status: 400 },
+      );
+    }
+
+    // 验证字段长度限制
+    if (title.length > 200) {
+      return NextResponse.json(
+        { error: "Title must be less than 200 characters" },
+        { status: 400 },
+      );
+    }
+    if (slug.length > 200) {
+      return NextResponse.json(
+        { error: "Slug must be less than 200 characters" },
+        { status: 400 },
+      );
+    }
+    if (content.length > 100000) {
+      return NextResponse.json(
+        { error: "Content must be less than 100,000 characters" },
+        { status: 400 },
+      );
+    }
+    if (excerpt && excerpt.length > 500) {
+      return NextResponse.json(
+        { error: "Excerpt must be less than 500 characters" },
         { status: 400 },
       );
     }
@@ -59,8 +86,9 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(post, { status: 201 });
-  } catch (error: any) {
-    if (error?.message?.includes("UNIQUE constraint")) {
+  } catch (error: unknown) {
+    const err = error as Error;
+    if (err?.message?.includes("UNIQUE constraint")) {
       return NextResponse.json(
         { error: "A post with this slug already exists" },
         { status: 409 },
