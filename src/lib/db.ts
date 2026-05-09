@@ -55,18 +55,59 @@ export interface Setting {
 }
 
 // Get D1 binding from environment
-// In Cloudflare Pages Functions, bindings are available via context.env
-// For local development with wrangler, they are available via process.env
+// In Cloudflare Workers with OpenNext, D1 is accessed via env object passed to handlers
+// For local development with wrangler, it's available via the worker context
 function getDB(): D1Database {
-  // D1 binding injected by Cloudflare
-  if (
-    typeof process !== "undefined" &&
-    process.env &&
-    (process.env as Record<string, unknown>).DB
-  ) {
-    return (process.env as Record<string, unknown>).DB as D1Database;
+  console.log('[getDB] Function called');
+  
+  // Check globalThis.__D1_BUNDLES__ (OpenNext production mode)
+  const hasGlobalThis = typeof globalThis !== "undefined";
+  console.log('[getDB] hasGlobalThis:', hasGlobalThis);
+  
+  if (hasGlobalThis) {
+    const globalAny = globalThis as any;
+    const hasBundles = '__D1_BUNDLES__' in globalAny;
+    console.log('[getDB] has __D1_BUNDLES__:', hasBundles);
+    
+    if (hasBundles) {
+      const bundlesKeys = Object.keys(globalAny.__D1_BUNDLES__);
+      console.log('[getDB] __D1_BUNDLES__ keys:', bundlesKeys);
+      
+      const hasDB = 'DB' in globalAny.__D1_BUNDLES__;
+      console.log('[getDB] has DB binding:', hasDB);
+      
+      if (hasDB) {
+        console.log('[getDB] ✅ Using OpenNext D1 binding');
+        return globalAny.__D1_BUNDLES__.DB as D1Database;
+      }
+    }
   }
-  throw new Error("D1 database binding (DB) is not available");
+  
+  // Check process.env.DB (some environments)
+  const hasProcess = typeof process !== "undefined";
+  console.log('[getDB] hasProcess:', hasProcess);
+  
+  if (hasProcess && process.env) {
+    const hasEnvDB = 'DB' in process.env;
+    console.log('[getDB] has process.env.DB:', hasEnvDB);
+    
+    if (hasEnvDB) {
+      console.log('[getDB] ✅ Using process.env.DB');
+      return (process.env as any).DB as D1Database;
+    }
+  }
+  
+  // Try to access from Cloudflare Worker env object (Wrangler dev mode)
+  // In Wrangler dev, bindings are sometimes available via different mechanisms
+  console.log('[getDB] ❌ No D1 binding found in standard locations');
+  console.log('[getDB] This indicates OpenNext did not properly inject D1 bindings during build');
+  console.log('[getDB] Solution: Rebuild the project with correct DATABASE_ID configuration');
+  
+  throw new Error(
+    "D1 database binding not available. The OpenNext build does not have D1 bindings injected.\n" +
+    "Please rebuild: npm run build:cf\n" +
+    "Make sure DATABASE_ID is set in .env file before building."
+  );
 }
 
 // --- Posts CRUD ---
@@ -132,23 +173,38 @@ export async function getAllPostsAdmin(
   page: number = 1,
   limit: number = 50,
 ): Promise<{ posts: PostListItem[]; total: number }> {
-  const db = getDB();
-  const offset = (page - 1) * limit;
+  console.log('DEBUG - getAllPostsAdmin called with page:', page, 'limit:', limit);
+  
+  try {
+    const db = getDB();
+    console.log('DEBUG - D1 database obtained');
+    
+    const offset = (page - 1) * limit;
+    console.log('DEBUG - Calculated offset:', offset);
 
-  const countResult = await db
-    .prepare("SELECT COUNT(*) as total FROM posts")
-    .first<{ total: number }>();
-  const postsResult = await db
-    .prepare(
-      "SELECT id, title, slug, excerpt, tags, published, updated_at FROM posts ORDER BY updated_at DESC LIMIT ? OFFSET ?",
-    )
-    .bind(limit.toString(), offset.toString())
-    .all<PostListItem & { published: number }>();
+    console.log('DEBUG - Executing COUNT query...');
+    const countResult = await db
+      .prepare("SELECT COUNT(*) as total FROM posts")
+      .first<{ total: number }>();
+    console.log('DEBUG - COUNT result:', countResult);
 
-  return {
-    posts: postsResult.results || [],
-    total: countResult?.total || 0,
-  };
+    console.log('DEBUG - Executing SELECT query...');
+    const postsResult = await db
+      .prepare(
+        "SELECT id, title, slug, excerpt, tags, published, updated_at FROM posts ORDER BY updated_at DESC LIMIT ? OFFSET ?",
+      )
+      .bind(limit.toString(), offset.toString())
+      .all<PostListItem & { published: number }>();
+    console.log('DEBUG - SELECT result count:', postsResult.results?.length || 0);
+
+    return {
+      posts: postsResult.results || [],
+      total: countResult?.total || 0,
+    };
+  } catch (error) {
+    console.error('ERROR - getAllPostsAdmin failed:', error);
+    throw error;
+  }
 }
 
 export async function createPost(post: {

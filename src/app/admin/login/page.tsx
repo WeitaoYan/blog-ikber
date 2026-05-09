@@ -30,6 +30,7 @@ export default function LoginPage() {
 
       router.push('/admin/dashboard');
     } catch (err) {
+      console.error('Login error:', err);
       setError('网络错误，请重试');
     } finally {
       setLoading(false);

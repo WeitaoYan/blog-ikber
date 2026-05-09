@@ -10,23 +10,41 @@ export async function GET(request: NextRequest) {
   const tag = searchParams.get("tag") || undefined;
   const admin = searchParams.get("admin") === "true";
 
+  console.log('DEBUG - API /posts GET called, admin:', admin, 'page:', page, 'limit:', limit);
+
   try {
     if (admin) {
       // Admin view - requires auth, shows all posts including drafts
+      console.log('DEBUG - Checking authentication...');
       const authenticated = await requireAuth(request);
+      console.log('DEBUG - Authentication result:', authenticated);
+      
       if (!authenticated) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
+      
+      console.log('DEBUG - Calling getAllPostsAdmin...');
       const result = await getAllPostsAdmin(page, limit);
+      console.log('DEBUG - getAllPostsAdmin returned successfully');
       return NextResponse.json(result);
     }
 
     // Public view - only published posts
+    console.log('DEBUG - Fetching public posts...');
     const result = await getPosts(page, limit, tag);
+    console.log('DEBUG - Public posts fetched successfully');
     return NextResponse.json(result);
   } catch (error) {
+    console.error('ERROR - Failed to fetch posts:', error);
+    console.error('ERROR - Error name:', error instanceof Error ? error.name : 'N/A');
+    console.error('ERROR - Error message:', error instanceof Error ? error.message : String(error));
+    console.error('ERROR - Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
     return NextResponse.json(
-      { error: "Failed to fetch posts" },
+      { 
+        error: "Failed to fetch posts",
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 },
     );
   }
@@ -94,8 +112,12 @@ export async function POST(request: NextRequest) {
         { status: 409 },
       );
     }
+    console.error('ERROR - Failed to create post:', error);
     return NextResponse.json(
-      { error: "Failed to create post" },
+      { 
+        error: "Failed to create post",
+        details: err?.message || String(error)
+      },
       { status: 500 },
     );
   }

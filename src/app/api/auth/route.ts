@@ -8,6 +8,11 @@ export async function POST(request: NextRequest) {
     const adminUsername = process.env.ADMIN_USERNAME;
     const adminPassword = process.env.ADMIN_PASSWORD;
 
+    // 调试日志：检查环境变量是否加载
+    console.log('DEBUG - ADMIN_USERNAME:', adminUsername ? 'exists' : 'undefined');
+    console.log('DEBUG - ADMIN_PASSWORD:', adminPassword ? 'exists' : 'undefined');
+    console.log('DEBUG - JWT_SECRET:', process.env.JWT_SECRET ? 'exists' : 'undefined');
+
     if (!adminUsername || !adminPassword) {
       return NextResponse.json(
         { error: "Server configuration error" },
@@ -35,6 +40,7 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
+    console.error('Auth error:', error);
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 }
