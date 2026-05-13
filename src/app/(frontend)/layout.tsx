@@ -1,17 +1,46 @@
 import Link from 'next/link';
+import { getSetting } from '@/lib/db';
 
-export default function FrontendLayout({
+export async function generateMetadata() {
+  try {
+    const blogTitle = await getSetting('blogTitle');
+    const title = blogTitle || 'My Blog';
+    return {
+      title: {
+        default: title,
+        template: `%s | ${title}`,
+      },
+    };
+  } catch {
+    return {
+      title: {
+        default: 'My Blog',
+        template: '%s | My Blog',
+      },
+    };
+  }
+}
+
+export default async function FrontendLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  let blogTitle = 'My Blog';
+  try {
+    const title = await getSetting('blogTitle');
+    if (title) blogTitle = title;
+  } catch {
+    // 降级为默认值
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 py-6 flex items-center justify-between">
           <Link href="/" className="text-2xl font-bold text-gray-900 hover:text-primary-600 transition-colors">
-            My Blog
+            {blogTitle}
           </Link>
           <nav className="flex items-center gap-6">
             <Link
@@ -40,7 +69,7 @@ export default function FrontendLayout({
       {/* Footer */}
       <footer className="border-t border-gray-200">
         <div className="max-w-4xl mx-auto px-4 py-8 text-center text-sm text-gray-500">
-          <p>&copy; {new Date().getFullYear()} My Blog. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} {blogTitle}. All rights reserved.</p>
           <p className="mt-1">
             Powered by{' '}
             <a
