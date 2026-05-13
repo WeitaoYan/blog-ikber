@@ -17,3 +17,7 @@ database_id = "0b92cec8-41fe-4354-b844-fea2e4c7024e"
 [[r2_buckets]]
 binding = "MY_BUCKET"
 bucket_name = "blog-images"
+
+[observability]
+enabled = true
+head_sampling_rate = 1
