@@ -12,9 +12,7 @@ services = [
 [[d1_databases]]
 binding = "DB"
 database_name = "blog-db"
-# database_id should be set via environment variable or CI/CD
-# For local development, use: wrangler dev --local
-database_id = "${DATABASE_ID}"
+database_id = "0b92cec8-41fe-4354-b844-fea2e4c7024e"
 
 [[r2_buckets]]
 binding = "MY_BUCKET"
