@@ -32,7 +32,8 @@ export default function EditorPage() {
   const router = useRouter();
   const params = useParams();
   const slugParam = params?.slug;
-  const postId = slugParam ? parseInt(slugParam[0]) : null;
+  const rawId = slugParam ? parseInt(slugParam[0]) : null;
+  const postId = rawId && !isNaN(rawId) ? rawId : null;
   const isEditing = !!postId;
 
   const [form, setForm] = useState<PostForm>(emptyForm);

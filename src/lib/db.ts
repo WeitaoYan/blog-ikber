@@ -58,50 +58,51 @@ export interface Setting {
 // In Cloudflare Workers with OpenNext, D1 is accessed via env object passed to handlers
 // For local development with wrangler, it's available via the worker context
 function getDB(): D1Database {
-  console.log('[getDB] Function called');
+  // Check process.env.NODE_ENV for development mode hints
+  const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV === 'development';
   
   // Check globalThis.__D1_BUNDLES__ (OpenNext production mode)
   const hasGlobalThis = typeof globalThis !== "undefined";
-  console.log('[getDB] hasGlobalThis:', hasGlobalThis);
   
   if (hasGlobalThis) {
     const globalAny = globalThis as any;
     const hasBundles = '__D1_BUNDLES__' in globalAny;
-    console.log('[getDB] has __D1_BUNDLES__:', hasBundles);
     
     if (hasBundles) {
-      const bundlesKeys = Object.keys(globalAny.__D1_BUNDLES__);
-      console.log('[getDB] __D1_BUNDLES__ keys:', bundlesKeys);
-      
       const hasDB = 'DB' in globalAny.__D1_BUNDLES__;
-      console.log('[getDB] has DB binding:', hasDB);
       
       if (hasDB) {
-        console.log('[getDB] ✅ Using OpenNext D1 binding');
         return globalAny.__D1_BUNDLES__.DB as D1Database;
       }
     }
   }
   
-  // Check process.env.DB (some environments)
+  // Try process.env.DB after checking Cloudflare Worker env injected vars
   const hasProcess = typeof process !== "undefined";
-  console.log('[getDB] hasProcess:', hasProcess);
   
   if (hasProcess && process.env) {
     const hasEnvDB = 'DB' in process.env;
-    console.log('[getDB] has process.env.DB:', hasEnvDB);
     
     if (hasEnvDB) {
-      console.log('[getDB] ✅ Using process.env.DB');
       return (process.env as any).DB as D1Database;
     }
   }
   
-  // Try to access from Cloudflare Worker env object (Wrangler dev mode)
-  // In Wrangler dev, bindings are sometimes available via different mechanisms
-  console.log('[getDB] ❌ No D1 binding found in standard locations');
-  console.log('[getDB] This indicates OpenNext did not properly inject D1 bindings during build');
-  console.log('[getDB] Solution: Rebuild the project with correct DATABASE_ID configuration');
+  // Check Cloudflare Worker env object pattern (wrangler dev injects via env param)
+  // OpenNext wraps this as __D1_BUNDLES__, so this is a final fallback for custom setups
+  if (typeof (globalThis as any)?.env?.DB !== 'undefined') {
+    return (globalThis as any).env.DB as D1Database;
+  }
+  
+  // In development mode (next dev), D1 is not available — provide clear guidance
+  if (isDev) {
+    console.warn(
+      '[DB] D1 is not available in next dev mode.\n' +
+      '  Use "npm run dev:wrangler" (wrangler dev) instead, which injects D1 bindings.\n' +
+      '  Or set up a local SQLite file for development with: wrangler dev --local'
+    );
+    throw new Error('D1 not available in next dev mode. Use "npm run dev:wrangler" instead.');
+  }
   
   throw new Error(
     "D1 database binding not available. The OpenNext build does not have D1 bindings injected.\n" +
