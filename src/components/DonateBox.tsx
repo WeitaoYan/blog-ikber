@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 
 interface DonateSettings {
   wechat?: string;
@@ -10,22 +11,32 @@ interface DonateSettings {
 export function DonateBox() {
   const [isOpen, setIsOpen] = useState(false);
   const [settings, setSettings] = useState<DonateSettings>({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load donate settings from localStorage (set by admin settings page)
-    try {
-      const saved = localStorage.getItem('blog_settings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setSettings({
-          wechat: parsed.donateWechat,
-          alipay: parsed.donateAlipay,
-        });
+    async function fetchDonateSettings() {
+      try {
+        const res = await fetch('/api/donate');
+        if (res.ok) {
+          const data = await res.json();
+          setSettings({
+            wechat: data.donateWechat,
+            alipay: data.donateAlipay,
+          });
+        }
+      } catch {
+        // Silently fail - donate box will not show
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      // ignore
     }
+
+    fetchDonateSettings();
   }, []);
+
+  if (loading) {
+    return null;
+  }
 
   const hasDonate = settings.wechat || settings.alipay;
   if (!hasDonate) return null;
@@ -60,9 +71,11 @@ export function DonateBox() {
           <div className="flex justify-center gap-8">
             {settings.wechat && (
               <div className="text-center">
-                <img
+                <Image
                   src={settings.wechat}
                   alt="微信打赏"
+                  width={144}
+                  height={144}
                   className="w-36 h-36 object-contain rounded-lg bg-white p-2 shadow-sm"
                 />
                 <p className="mt-2 text-xs text-gray-500">微信</p>
@@ -70,9 +83,11 @@ export function DonateBox() {
             )}
             {settings.alipay && (
               <div className="text-center">
-                <img
+                <Image
                   src={settings.alipay}
                   alt="支付宝打赏"
+                  width={144}
+                  height={144}
                   className="w-36 h-36 object-contain rounded-lg bg-white p-2 shadow-sm"
                 />
                 <p className="mt-2 text-xs text-gray-500">支付宝</p>

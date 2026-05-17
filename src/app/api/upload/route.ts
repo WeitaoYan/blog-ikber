@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { MAX_FILE_SIZE, ALLOWED_IMAGE_TYPES } from "@/lib/constants";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 export async function POST(request: NextRequest) {
   const authenticated = await requireAuth(request);
@@ -16,18 +17,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Validate file type
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
       return NextResponse.json(
-        {
-          error:
-            "Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.",
-        },
+        { error: "Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed." },
         { status: 400 },
       );
     }
 
-    // Validate file size
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         { error: "File too large. Maximum size is 5MB." },
@@ -35,7 +31,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate unique filename
     const ext = file.name.split(".").pop() || "jpg";
     const now = new Date();
     const year = now.getFullYear();
@@ -43,9 +38,8 @@ export async function POST(request: NextRequest) {
     const uuid = crypto.randomUUID();
     const key = `images/${year}/${month}/${uuid}.${ext}`;
 
-    // Upload to R2
-    // @ts-ignore - R2 binding injected by Cloudflare
-    const bucket = process.env.MY_BUCKET;
+    const cf = getCloudflareContext();
+    const bucket = cf.env.MY_BUCKET;
     if (!bucket) {
       return NextResponse.json(
         { error: "Storage not configured" },
@@ -54,17 +48,18 @@ export async function POST(request: NextRequest) {
     }
 
     const buffer = await file.arrayBuffer();
-    // @ts-ignore
-    await process.env.MY_BUCKET.put(key, buffer, {
+    await bucket.put(key, buffer, {
       httpMetadata: { contentType: file.type },
     });
 
-    const publicUrl = process.env.R2_PUBLIC_URL
-      ? `${process.env.R2_PUBLIC_URL}/${key}`
+    const r2PublicUrl = process.env.R2_PUBLIC_URL;
+    const publicUrl = r2PublicUrl
+      ? `${r2PublicUrl}/${key}`
       : `/${key}`;
 
     return NextResponse.json({ url: publicUrl });
   } catch (error) {
+    console.error('Upload error:', error);
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }

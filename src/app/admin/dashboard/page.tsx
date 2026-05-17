@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -18,11 +18,7 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
   const router = useRouter();
 
-  useEffect(() => {
-    fetchPosts();
-  }, []);
-
-  async function fetchPosts() {
+  const fetchPosts = useCallback(async () => {
     try {
       const res = await fetch('/api/posts?admin=true&limit=50');
       if (res.status === 401) {
@@ -32,12 +28,16 @@ export default function DashboardPage() {
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setPosts(data.posts || []);
-    } catch (err) {
+    } catch {
       setError('加载文章列表失败');
     } finally {
       setLoading(false);
     }
-  }
+  }, [router]);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
 
   async function handleDelete(id: number) {
     if (!confirm('确定要删除这篇文章吗？此操作不可撤销。')) return;

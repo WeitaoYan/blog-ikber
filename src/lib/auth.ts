@@ -1,28 +1,44 @@
 import { SignJWT, jwtVerify } from "jose";
 import { JWT_EXPIRES_IN, COOKIE_NAME } from "./constants";
 
-const getJwtSecret = () => {
+// Flag to track if JWT is configured
+let jwtConfigured = false;
+let jwtSecret: Uint8Array | null = null;
+
+function initJwtConfig() {
+  if (jwtConfigured) return;
+
   const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error("JWT_SECRET environment variable is not set");
+  if (secret) {
+    jwtSecret = new TextEncoder().encode(secret);
+    jwtConfigured = true;
+  } else {
+    // Log warning but don't crash - auth will simply fail
+    console.warn("JWT_SECRET not configured. Authentication will be unavailable.");
+    jwtConfigured = true; // Mark as initialized to prevent repeated warnings
   }
-  return new TextEncoder().encode(secret);
-};
+}
+
+initJwtConfig();
 
 export async function signToken(): Promise<string> {
-  const secret = getJwtSecret();
+  if (!jwtSecret) {
+    throw new Error("JWT authentication is not configured on the server");
+  }
   const token = await new SignJWT({ sub: "admin" })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(JWT_EXPIRES_IN)
-    .sign(secret);
+    .sign(jwtSecret);
   return token;
 }
 
 export async function verifyToken(token: string): Promise<boolean> {
+  if (!jwtSecret) {
+    return false;
+  }
   try {
-    const secret = getJwtSecret();
-    await jwtVerify(token, secret);
+    await jwtVerify(token, jwtSecret);
     return true;
   } catch {
     return false;

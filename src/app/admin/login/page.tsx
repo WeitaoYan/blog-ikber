@@ -28,7 +28,8 @@ export default function LoginPage() {
         return;
       }
 
-      router.push('/admin/dashboard');
+      // 登录成功后，使用 window.location.replace 进行硬跳转，确保页面完全刷新
+      window.location.replace('/admin/dashboard');
     } catch (err) {
       console.error('Login error:', err);
       setError('网络错误，请重试');

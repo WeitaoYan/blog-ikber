@@ -3,7 +3,7 @@ import { getSetting } from '@/lib/db';
 
 export async function generateMetadata() {
   try {
-    const blogTitle = await getSetting('blogTitle');
+    const blogTitle = await getSetting('blog_title');
     const title = blogTitle || 'My Blog';
     return {
       title: {
@@ -28,7 +28,7 @@ export default async function FrontendLayout({
 }) {
   let blogTitle = 'My Blog';
   try {
-    const title = await getSetting('blogTitle');
+    const title = await getSetting('blog_title');
     if (title) blogTitle = title;
   } catch {
     // 降级为默认值
@@ -82,12 +82,12 @@ export default async function FrontendLayout({
             </a>
             {' '}&{' '}
             <a
-              href="https://pages.cloudflare.com"
+              href="https://workers.cloudflare.com"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary-600 hover:underline"
             >
-              Cloudflare Pages
+              Cloudflare Workers
             </a>
           </p>
         </div>

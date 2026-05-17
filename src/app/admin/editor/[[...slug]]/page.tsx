@@ -1,14 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import dynamic from 'next/dynamic';
-
-// Dynamically import MD Editor to avoid SSR issues
-const MDEditor = dynamic(
-  () => import('@uiw/react-md-editor').then((mod) => mod.default),
-  { ssr: false }
-);
+import { UploadMDEditor } from '@/components/UploadMDEditor';
 
 interface PostForm {
   title: string;
@@ -28,6 +22,9 @@ const emptyForm: PostForm = {
   published: false,
 };
 
+const AUTOSAVE_KEY = 'draft_post';
+const AUTOSAVE_INTERVAL = 30000; // 30 seconds
+
 export default function EditorPage() {
   const router = useRouter();
   const params = useParams();
@@ -39,37 +36,126 @@ export default function EditorPage() {
   const [form, setForm] = useState<PostForm>(emptyForm);
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [error, setError] = useState('');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const lastSavedFormRef = useRef<string>('');
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Load draft from localStorage on mount (only for new posts)
+  useEffect(() => {
+    if (!isEditing) {
+      const savedDraft = localStorage.getItem(AUTOSAVE_KEY);
+      if (savedDraft) {
+        try {
+          const draft = JSON.parse(savedDraft);
+          setForm(draft);
+          setLastSaved(new Date(draft.savedAt));
+          lastSavedFormRef.current = JSON.stringify(draft);
+        } catch {
+          localStorage.removeItem(AUTOSAVE_KEY);
+        }
+      }
+    }
+  }, [isEditing]);
+
+  // Define fetchPost function before it's used in useEffect
+  const fetchPost = useCallback(function(id: number) {
+    fetch(`/api/posts/${id}`)
+      .then((res) => {
+        if (res.status === 401) {
+          router.push('/admin/login');
+          return;
+        }
+        if (!res.ok) throw new Error('Failed to fetch');
+        return res.json();
+      })
+      .then((post) => {
+        if (post) {
+          setForm({
+            title: post.title || '',
+            slug: post.slug || '',
+            content: post.content || '',
+            excerpt: post.excerpt || '',
+            tags: post.tags ? JSON.parse(post.tags).join(', ') : '',
+            published: post.published === 1,
+          });
+          lastSavedFormRef.current = JSON.stringify({
+            title: post.title || '',
+            slug: post.slug || '',
+            content: post.content || '',
+            excerpt: post.excerpt || '',
+            tags: post.tags ? JSON.parse(post.tags).join(', ') : '',
+            published: post.published === 1,
+          });
+        }
+      })
+      .catch(() => {
+        setError('加载文章失败');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [router, setForm, setError, setLoading]);
+
+  // Fetch existing post when editing
   useEffect(() => {
     if (postId) {
       fetchPost(postId);
     }
-  }, [postId]);
+  }, [postId, fetchPost]);
 
-  async function fetchPost(id: number) {
-    try {
-      const res = await fetch(`/api/posts/${id}`);
-      if (res.status === 401) {
-        router.push('/admin/login');
-        return;
-      }
-      if (!res.ok) throw new Error('Failed to fetch');
-      const post = await res.json();
-      setForm({
-        title: post.title || '',
-        slug: post.slug || '',
-        content: post.content || '',
-        excerpt: post.excerpt || '',
-        tags: post.tags ? JSON.parse(post.tags).join(', ') : '',
-        published: post.published === 1,
-      });
-    } catch (err) {
-      setError('加载文章失败');
-    } finally {
-      setLoading(false);
+  // Track unsaved changes
+  useEffect(() => {
+    const currentForm = JSON.stringify(form);
+    if (currentForm !== lastSavedFormRef.current) {
+      setHasUnsavedChanges(true);
     }
-  }
+  }, [form]);
+
+  // Save draft to localStorage
+  const saveDraft = useCallback(() => {
+    if (isEditing) return;
+
+    const draftWithTimestamp = {
+      ...form,
+      savedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(draftWithTimestamp));
+    lastSavedFormRef.current = JSON.stringify(draftWithTimestamp);
+    setLastSaved(new Date());
+    setAutoSaving(false);
+    setHasUnsavedChanges(false);
+  }, [form, isEditing]);
+
+  // Auto-save to localStorage
+  useEffect(() => {
+    if (!isEditing && hasUnsavedChanges && form.title) {
+      autoSaveTimerRef.current = setTimeout(() => {
+        saveDraft();
+      }, AUTOSAVE_INTERVAL);
+    }
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [form, hasUnsavedChanges, isEditing, saveDraft]);
+
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges && !isEditing) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges, isEditing]);
 
   // Auto-generate slug from title
   const handleTitleChange = useCallback(
@@ -88,6 +174,14 @@ export default function EditorPage() {
       }));
     },
     [isEditing]
+  );
+
+  // Handle form field changes
+  const handleFormChange = useCallback(
+    (field: keyof PostForm, value: string | boolean) => {
+      setForm((prev) => ({ ...prev, [field]: value }));
+    },
+    []
   );
 
   async function handleSubmit(e: React.FormEvent) {
@@ -130,12 +224,24 @@ export default function EditorPage() {
         throw new Error(data.error || '保存失败');
       }
 
+      // Clear draft on successful save
+      if (!isEditing) {
+        localStorage.removeItem(AUTOSAVE_KEY);
+      }
+
       router.push('/admin/dashboard');
-    } catch (err: any) {
-      setError(err.message || '保存失败');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : '保存失败');
     } finally {
       setSaving(false);
     }
+  }
+
+  function formatLastSaved(date: Date): string {
+    return date.toLocaleTimeString('zh-CN', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   }
 
   if (loading) {
@@ -149,10 +255,33 @@ export default function EditorPage() {
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">
           {isEditing ? '编辑文章' : '写新文章'}
         </h1>
+        {!isEditing && (
+          <div className="flex items-center gap-3 text-sm">
+            {autoSaving && (
+              <span className="text-gray-500">保存中...</span>
+            )}
+            {!autoSaving && lastSaved && (
+              <span className="text-gray-500">
+                已保存 {formatLastSaved(lastSaved)}
+              </span>
+            )}
+            {hasUnsavedChanges && !lastSaved && (
+              <span className="text-amber-600">未保存</span>
+            )}
+            <button
+              type="button"
+              onClick={saveDraft}
+              disabled={autoSaving || !hasUnsavedChanges}
+              className="text-primary-600 hover:text-primary-800 disabled:text-gray-400 disabled:cursor-not-allowed"
+            >
+              保存草稿
+            </button>
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -179,9 +308,7 @@ export default function EditorPage() {
           <input
             type="text"
             value={form.slug}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, slug: e.target.value }))
-            }
+            onChange={(e) => handleFormChange('slug', e.target.value)}
             className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 font-mono text-sm"
             placeholder="post-url-slug"
             required
@@ -197,13 +324,10 @@ export default function EditorPage() {
             内容 (Markdown)
           </label>
           <div data-color-mode="light">
-            <MDEditor
+            <UploadMDEditor
               value={form.content}
-              onChange={(value) =>
-                setForm((prev) => ({ ...prev, content: value || '' }))
-              }
+              onChange={(value) => handleFormChange('content', value)}
               height={500}
-              preview="live"
             />
           </div>
         </div>
@@ -215,9 +339,7 @@ export default function EditorPage() {
           </label>
           <textarea
             value={form.excerpt}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, excerpt: e.target.value }))
-            }
+            onChange={(e) => handleFormChange('excerpt', e.target.value)}
             rows={3}
             className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900"
             placeholder="文章摘要（可选）"
@@ -232,9 +354,7 @@ export default function EditorPage() {
           <input
             type="text"
             value={form.tags}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, tags: e.target.value }))
-            }
+            onChange={(e) => handleFormChange('tags', e.target.value)}
             className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900"
             placeholder="tech, javascript, web（用逗号分隔）"
           />
@@ -246,12 +366,7 @@ export default function EditorPage() {
             <input
               type="checkbox"
               checked={form.published}
-              onChange={(e) =>
-                setForm((prev) => ({
-                  ...prev,
-                  published: e.target.checked,
-                }))
-              }
+              onChange={(e) => handleFormChange('published', e.target.checked)}
               className="sr-only peer"
             />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>

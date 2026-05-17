@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
+import Image from 'next/image';
 
 interface MDXRendererProps {
   content: string;
@@ -62,15 +63,22 @@ export function MDXRenderer({ content }: MDXRendererProps) {
               </a>
             );
           },
-          img: ({ src, alt, ...props }) => (
-            <img
-              src={src}
-              alt={alt || 'Image'}
-              className="rounded-lg mx-auto max-w-full h-auto"
-              loading="lazy"
-              {...props}
-            />
-          ),
+          img: ({ src, alt, ...props }) => {
+            // 移除width和height属性，因为Image组件会自动处理
+            const { width, height, ...restProps } = props;
+            return (
+              <Image
+                src={src || ''}
+                alt={alt || 'Image'}
+                width={0}
+                height={0}
+                sizes="100vw"
+                className="rounded-lg mx-auto max-w-full h-auto"
+                loading="lazy"
+                {...restProps}
+              />
+            );
+          },
         }}
       >
         {content}

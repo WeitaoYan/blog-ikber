@@ -4,13 +4,13 @@ import { LIKED_POSTS_COOKIE } from "@/lib/constants";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ slug: string }> },
 ) {
   try {
-    const { id: slug } = await params;
+    const { slug } = await params;
     const count = await getLikeCount(slug);
     return NextResponse.json({ count });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to get like count" },
       { status: 500 },
@@ -20,10 +20,10 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ slug: string }> },
 ) {
   try {
-    const { id: slug } = await params;
+    const { slug } = await params;
 
     // Check if already liked via cookie
     const cookieHeader = request.headers.get("cookie") || "";
@@ -65,7 +65,7 @@ export async function POST(
     });
 
     return response;
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to like post" }, { status: 500 });
   }
 }

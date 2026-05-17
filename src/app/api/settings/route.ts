@@ -5,31 +5,17 @@ import { requireAuth } from "@/lib/auth";
 export async function GET() {
   try {
     const settings = await getAllSettings();
-    
-    // 兼容旧的 donate JSON 格式和新的独立字段
-    let donateWechat = settings.donateWechat || "";
-    let donateAlipay = settings.donateAlipay || "";
-    
-    // 如果存在旧的 donate JSON 格式，解析它
-    if (settings.donate && !donateWechat && !donateAlipay) {
-      try {
-        const donateData = JSON.parse(settings.donate);
-        donateWechat = donateData.wechat || "";
-        donateAlipay = donateData.alipay || "";
-      } catch {
-        // 忽略解析错误
-      }
-    }
-    
+
     return NextResponse.json({
-      donateWechat,
-      donateAlipay,
-      blogTitle: settings.blogTitle || settings.blog_title || "My Blog",
-      blogDescription: settings.blogDescription || settings.blog_description || "",
+      donateWechat: settings.donate_wechat || "",
+      donateAlipay: settings.donate_alipay || "",
+      blogTitle: settings.blog_title || "My Blog",
+      blogDescription: settings.blog_description || "",
     });
   } catch (error) {
+    console.error('Error fetching settings:', error);
     return NextResponse.json(
-      { error: "Failed to fetch settings" },
+      { error: "Failed to fetch settings", details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
@@ -45,24 +31,25 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { donateWechat, donateAlipay, blogTitle, blogDescription } = body;
 
-    // Save each setting to database
+    // Save each setting to database using snake_case keys
     if (donateWechat !== undefined) {
-      await setSetting("donateWechat", donateWechat);
+      await setSetting("donate_wechat", donateWechat);
     }
     if (donateAlipay !== undefined) {
-      await setSetting("donateAlipay", donateAlipay);
+      await setSetting("donate_alipay", donateAlipay);
     }
     if (blogTitle !== undefined) {
-      await setSetting("blogTitle", blogTitle);
+      await setSetting("blog_title", blogTitle);
     }
     if (blogDescription !== undefined) {
-      await setSetting("blogDescription", blogDescription);
+      await setSetting("blog_description", blogDescription);
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('Error saving settings:', error);
     return NextResponse.json(
-      { error: "Failed to save settings" },
+      { error: "Failed to save settings", details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

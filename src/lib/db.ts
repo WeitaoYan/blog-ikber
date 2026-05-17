@@ -58,56 +58,48 @@ export interface Setting {
 // In Cloudflare Workers with OpenNext, D1 is accessed via env object passed to handlers
 // For local development with wrangler, it's available via the worker context
 function getDB(): D1Database {
-  // Check process.env.NODE_ENV for development mode hints
-  const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV === 'development';
-  
-  // Check globalThis.__D1_BUNDLES__ (OpenNext production mode)
-  const hasGlobalThis = typeof globalThis !== "undefined";
-  
-  if (hasGlobalThis) {
-    const globalAny = globalThis as any;
-    const hasBundles = '__D1_BUNDLES__' in globalAny;
-    
-    if (hasBundles) {
-      const hasDB = 'DB' in globalAny.__D1_BUNDLES__;
-      
-      if (hasDB) {
-        return globalAny.__D1_BUNDLES__.DB as D1Database;
-      }
-    }
+  // OpenNext 开发的 Symbol key (与 cloudflare-context.js 保持一致)
+  const cloudflareContextSymbol = Symbol.for("__cloudflare-context__");
+
+  // 1. 检查 OpenNext 开发模式下通过 Symbol 注入的 context (最优先)
+  const cloudflareContext = (globalThis as any)[cloudflareContextSymbol];
+  if (cloudflareContext?.env?.DB) {
+    return cloudflareContext.env.DB as D1Database;
   }
-  
-  // Try process.env.DB after checking Cloudflare Worker env injected vars
-  const hasProcess = typeof process !== "undefined";
-  
-  if (hasProcess && process.env) {
-    const hasEnvDB = 'DB' in process.env;
-    
-    if (hasEnvDB) {
-      return (process.env as any).DB as D1Database;
-    }
-  }
-  
-  // Check Cloudflare Worker env object pattern (wrangler dev injects via env param)
-  // OpenNext wraps this as __D1_BUNDLES__, so this is a final fallback for custom setups
+
+  // 2. 检查 globalThis.env.DB (Cloudflare Workers 环境)
   if (typeof (globalThis as any)?.env?.DB !== 'undefined') {
     return (globalThis as any).env.DB as D1Database;
   }
-  
-  // In development mode (next dev), D1 is not available — provide clear guidance
-  if (isDev) {
-    console.warn(
-      '[DB] D1 is not available in next dev mode.\n' +
-      '  Use "npm run dev:wrangler" (wrangler dev) instead, which injects D1 bindings.\n' +
-      '  Or set up a local SQLite file for development with: wrangler dev --local'
-    );
-    throw new Error('D1 not available in next dev mode. Use "npm run dev:wrangler" instead.');
+
+  // 3. 检查 globalThis.DB (某些部署方式)
+  if (typeof globalThis !== 'undefined' && 'DB' in globalThis) {
+    const globalAny = globalThis as any;
+    if (globalAny.DB) {
+      return globalAny.DB as D1Database;
+    }
   }
-  
+
+  // 4. 检查 globalThis.__D1_BUNDLES__ (OpenNext 生产模式)
+  if (typeof globalThis !== "undefined") {
+    const globalAny = globalThis as any;
+    const hasBundles = '__D1_BUNDLES__' in globalAny;
+    
+    if (hasBundles && globalAny.__D1_BUNDLES__?.DB) {
+      return globalAny.__D1_BUNDLES__.DB as D1Database;
+    }
+  }
+
+  // 5. 检查 process.env.DB
+  if (typeof process !== "undefined" && process.env?.DB) {
+    return process.env.DB as unknown as D1Database;
+  }
+
+  // 如果以上方法都失败，抛出错误
   throw new Error(
-    "D1 database binding not available. The OpenNext build does not have D1 bindings injected.\n" +
-    "Please rebuild: npm run build:cf\n" +
-    "Make sure DATABASE_ID is set in .env file before building."
+    "D1 database binding not available. Make sure you have called initOpenNextCloudflareForDev() in next.config.mjs.\n" +
+    "For development: npm run dev\n" +
+    "For production: npm run build:cf"
   );
 }
 
@@ -174,38 +166,24 @@ export async function getAllPostsAdmin(
   page: number = 1,
   limit: number = 50,
 ): Promise<{ posts: PostListItem[]; total: number }> {
-  console.log('DEBUG - getAllPostsAdmin called with page:', page, 'limit:', limit);
-  
-  try {
-    const db = getDB();
-    console.log('DEBUG - D1 database obtained');
-    
-    const offset = (page - 1) * limit;
-    console.log('DEBUG - Calculated offset:', offset);
+  const db = getDB();
+  const offset = (page - 1) * limit;
 
-    console.log('DEBUG - Executing COUNT query...');
-    const countResult = await db
-      .prepare("SELECT COUNT(*) as total FROM posts")
-      .first<{ total: number }>();
-    console.log('DEBUG - COUNT result:', countResult);
+  const countResult = await db
+    .prepare("SELECT COUNT(*) as total FROM posts")
+    .first<{ total: number }>();
 
-    console.log('DEBUG - Executing SELECT query...');
-    const postsResult = await db
-      .prepare(
-        "SELECT id, title, slug, excerpt, tags, published, updated_at FROM posts ORDER BY updated_at DESC LIMIT ? OFFSET ?",
-      )
-      .bind(limit.toString(), offset.toString())
-      .all<PostListItem & { published: number }>();
-    console.log('DEBUG - SELECT result count:', postsResult.results?.length || 0);
+  const postsResult = await db
+    .prepare(
+      "SELECT id, title, slug, excerpt, tags, published, updated_at FROM posts ORDER BY updated_at DESC LIMIT ? OFFSET ?",
+    )
+    .bind(limit.toString(), offset.toString())
+    .all<PostListItem & { published: number }>();
 
-    return {
-      posts: postsResult.results || [],
-      total: countResult?.total || 0,
-    };
-  } catch (error) {
-    console.error('ERROR - getAllPostsAdmin failed:', error);
-    throw error;
-  }
+  return {
+    posts: postsResult.results || [],
+    total: countResult?.total || 0,
+  };
 }
 
 export async function createPost(post: {

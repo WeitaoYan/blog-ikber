@@ -50,8 +50,9 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT                     -- 存储二维码 R2 URL 等 JSON
 );
 
--- 插入默认设置
+-- 插入默认设置（使用 snake_case 与代码中一致）
 INSERT OR IGNORE INTO settings (key, value)
-VALUES ('donate', '{"wechat":"", "alipay":""}'),
+VALUES ('donate_wechat', ''),
+       ('donate_alipay', ''),
        ('blog_title', 'My Blog'),
        ('blog_description', '');

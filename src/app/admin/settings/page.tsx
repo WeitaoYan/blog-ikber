@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 interface BlogSettings {
   donateWechat: string;
@@ -23,11 +24,7 @@ export default function SettingsPage() {
   const wechatInputRef = useRef<HTMLInputElement>(null);
   const alipayInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  async function fetchSettings() {
+  const fetchSettings = useCallback(async () => {
     try {
       const res = await fetch('/api/posts?admin=true&limit=1');
       if (res.status === 401) {
@@ -35,7 +32,6 @@ export default function SettingsPage() {
         return;
       }
 
-      // Fetch settings from API
       const settingsRes = await fetch('/api/settings');
       if (settingsRes.ok) {
         const settings: BlogSettings = await settingsRes.json();
@@ -44,22 +40,18 @@ export default function SettingsPage() {
         setBlogTitle(settings.blogTitle || 'My Blog');
         setBlogDescription(settings.blogDescription || '');
       } else {
-        // Fallback to localStorage if API fails
-        const savedSettings = localStorage.getItem('blog_settings');
-        if (savedSettings) {
-          const settings: BlogSettings = JSON.parse(savedSettings);
-          setDonateWechat(settings.donateWechat || '');
-          setDonateAlipay(settings.donateAlipay || '');
-          setBlogTitle(settings.blogTitle || 'My Blog');
-          setBlogDescription(settings.blogDescription || '');
-        }
+        setError('加载设置失败');
       }
-    } catch (err) {
+    } catch {
       setError('加载设置失败');
     } finally {
       setLoading(false);
     }
-  }
+  }, [router]);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
   async function handleUpload(field: 'wechat' | 'alipay') {
     const input = field === 'wechat' ? wechatInputRef.current : alipayInputRef.current;
@@ -107,7 +99,6 @@ export default function SettingsPage() {
         blogDescription,
       };
 
-      // Save to database via API
       const res = await fetch('/api/settings', {
         method: 'POST',
         headers: {
@@ -124,9 +115,6 @@ export default function SettingsPage() {
       if (!res.ok) {
         throw new Error('Failed to save settings');
       }
-
-      // Also save to localStorage as cache
-      localStorage.setItem('blog_settings', JSON.stringify(settings));
 
       setSuccess('设置已保存');
       setTimeout(() => setSuccess(''), 3000);
@@ -198,9 +186,11 @@ export default function SettingsPage() {
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
                 {donateWechat ? (
                   <div className="space-y-2">
-                    <img
+                    <Image
                       src={donateWechat}
                       alt="微信收款码"
+                      width={128}
+                      height={128}
                       className="w-32 h-32 object-contain mx-auto rounded"
                     />
                     <button
@@ -241,9 +231,11 @@ export default function SettingsPage() {
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
                 {donateAlipay ? (
                   <div className="space-y-2">
-                    <img
+                    <Image
                       src={donateAlipay}
                       alt="支付宝收款码"
+                      width={128}
+                      height={128}
                       className="w-32 h-32 object-contain mx-auto rounded"
                     />
                     <button
