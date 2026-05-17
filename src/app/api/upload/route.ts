@@ -52,10 +52,18 @@ export async function POST(request: NextRequest) {
       httpMetadata: { contentType: file.type },
     });
 
+    // 使用环境变量配置的R2公共URL
     const r2PublicUrl = process.env.R2_PUBLIC_URL;
-    const publicUrl = r2PublicUrl
-      ? `${r2PublicUrl}/${key}`
-      : `/${key}`;
+    
+    // 如果没有配置R2_PUBLIC_URL环境变量，则抛出错误
+    if (!r2PublicUrl) {
+      return NextResponse.json(
+        { error: "R2_PUBLIC_URL environment variable is not configured" },
+        { status: 500 }
+      );
+    }
+    
+    const publicUrl = `${r2PublicUrl}/${key}`;
 
     return NextResponse.json({ url: publicUrl });
   } catch (error) {

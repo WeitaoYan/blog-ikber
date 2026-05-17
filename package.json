@@ -15,8 +15,8 @@
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "db:migrate:create": "wrangler d1 migrations create blog-db --name",
     "db:migrate:apply-local": "wrangler d1 migrations apply blog-db --local",
-    "db:migrate:apply-remote": "wrangler d1 migrations apply blog-db",
-    "db:migrate:apply-all": "wrangler d1 migrations apply blog-db --local && wrangler d1 migrations apply blog-db",
+    "db:migrate:apply-remote": "wrangler d1 migrations apply blog-db --remote",
+    "db:migrate:apply-all": "wrangler d1 migrations apply blog-db --local && wrangler d1 migrations apply blog-db --remote",
     "db:execute-local": "wrangler d1 execute blog-db --file=./schema.sql --local",
     "db:setup-local": "wrangler d1 execute blog-db --file=./schema.sql --local",
     "db:setup-remote": "wrangler d1 execute blog-db --file=./schema.sql"
