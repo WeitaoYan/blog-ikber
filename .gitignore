@@ -44,7 +44,6 @@ Thumbs.db
 
 # Type generation
 !src/types/
-cloudflare-env.d.ts
 
 # Logs
 *.log
