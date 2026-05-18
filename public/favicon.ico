@@ -1,0 +1,3 @@
+// Placeholder file for favicon.ico
+// In a real scenario, you would place actual icon binary data here
+// For now, we'll just update the layout.tsx to generate a dynamic icon

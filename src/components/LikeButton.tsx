@@ -12,37 +12,45 @@ export function LikeButton({ slug }: LikeButtonProps) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Fetch initial like count
-    fetch(`/api/posts/${slug}/like`)
-      .then((res) => res.json())
-      .then((data) => {
+    const initializeLikeStatus = async () => {
+      // 获取初始点赞数
+      try {
+        const res = await fetch(`/api/posts/${slug}/like`);
+        const data = await res.json();
+        
         if (data.count !== undefined) {
           setCount(data.count);
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         // Only log in development
         if (process.env.NODE_ENV === 'development') {
           console.error('Failed to fetch like count:', error);
         }
-      });
-
-    // Check if already liked from cookie
-    const cookies = document.cookie.split(';').map((c) => c.trim());
-    for (const cookie of cookies) {
-      const [name, value] = cookie.split('=');
-      if (name === 'liked_posts' && value) {
-        try {
-          const likedPosts = JSON.parse(decodeURIComponent(value));
-          if (likedPosts.includes(slug)) {
-            setLiked(true);
-          }
-        } catch {
-          // ignore parse errors
-        }
-        break;
       }
-    }
+
+      // 检查是否已经点赞 - 从cookie中获取
+      const cookies = document.cookie.split(';').map((c) => c.trim());
+      let hasLiked = false;
+      
+      for (const cookie of cookies) {
+        const [name, value] = cookie.split('=');
+        if (name === 'liked_posts' && value) {
+          try {
+            const likedPosts = JSON.parse(decodeURIComponent(value));
+            if (Array.isArray(likedPosts) && likedPosts.includes(slug)) {
+              hasLiked = true;
+              break;
+            }
+          } catch {
+            // ignore parse errors
+          }
+        }
+      }
+      
+      setLiked(hasLiked);
+    };
+
+    initializeLikeStatus();
   }, [slug]);
 
   const handleLike = useCallback(async () => {
@@ -55,7 +63,7 @@ export function LikeButton({ slug }: LikeButtonProps) {
       });
 
       if (res.status === 409) {
-        // Already liked
+        // Already liked - update state to reflect this
         setLiked(true);
         const data = await res.json();
         if (data.count !== undefined) setCount(data.count);

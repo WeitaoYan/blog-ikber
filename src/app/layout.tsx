@@ -7,6 +7,9 @@ export const metadata: Metadata = {
     template: '%s | My Blog',
   },
   description: 'A personal blog built with Next.js',
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

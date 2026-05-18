@@ -85,6 +85,42 @@ export default function SettingsPage() {
     }
   }
 
+  // 添加删除功能
+  async function handleDelete(imageUrl: string, setImageState: React.Dispatch<React.SetStateAction<string>>) {
+    if (!imageUrl) return;
+    
+    if (!confirm('确定要删除这张图片吗？此操作无法撤销。')) {
+      return;
+    }
+
+    try {
+      // 调用API删除R2中的文件
+      const res = await fetch('/api/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: imageUrl }),
+      });
+
+      if (res.status === 401) {
+        router.push('/admin/login');
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error('Delete failed');
+      }
+
+      // 删除成功后更新本地状态
+      setImageState('');
+      setSuccess('图片已删除');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError('删除失败');
+    }
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -195,7 +231,7 @@ export default function SettingsPage() {
                     />
                     <button
                       type="button"
-                      onClick={() => setDonateWechat('')}
+                      onClick={() => handleDelete(donateWechat, setDonateWechat)}
                       className="text-sm text-red-500 hover:text-red-700"
                     >
                       删除
@@ -240,7 +276,7 @@ export default function SettingsPage() {
                     />
                     <button
                       type="button"
-                      onClick={() => setDonateAlipay('')}
+                      onClick={() => handleDelete(donateAlipay, setDonateAlipay)}
                       className="text-sm text-red-500 hover:text-red-700"
                     >
                       删除
