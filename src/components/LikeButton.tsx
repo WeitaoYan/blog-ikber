@@ -13,7 +13,7 @@ export function LikeButton({ slug }: LikeButtonProps) {
 
   useEffect(() => {
     const initializeLikeStatus = async () => {
-      // 获取初始点赞数
+      // 获取初始点赞数和点赞状态
       try {
         const res = await fetch(`/api/posts/${slug}/like`);
         const data = await res.json();
@@ -21,33 +21,16 @@ export function LikeButton({ slug }: LikeButtonProps) {
         if (data.count !== undefined) {
           setCount(data.count);
         }
+        
+        if (data.hasLiked !== undefined) {
+          setLiked(data.hasLiked);
+        }
       } catch (error) {
         // Only log in development
         if (process.env.NODE_ENV === 'development') {
           console.error('Failed to fetch like count:', error);
         }
       }
-
-      // 检查是否已经点赞 - 从cookie中获取
-      const cookies = document.cookie.split(';').map((c) => c.trim());
-      let hasLiked = false;
-      
-      for (const cookie of cookies) {
-        const [name, value] = cookie.split('=');
-        if (name === 'liked_posts' && value) {
-          try {
-            const likedPosts = JSON.parse(decodeURIComponent(value));
-            if (Array.isArray(likedPosts) && likedPosts.includes(slug)) {
-              hasLiked = true;
-              break;
-            }
-          } catch {
-            // ignore parse errors
-          }
-        }
-      }
-      
-      setLiked(hasLiked);
     };
 
     initializeLikeStatus();

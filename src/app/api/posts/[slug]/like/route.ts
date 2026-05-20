@@ -8,8 +8,28 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
+    
+    // Check if already liked via cookie
+    const cookieHeader = request.headers.get("cookie") || "";
+    const cookies = cookieHeader.split(";").map((c) => c.trim());
+    let likedPosts: string[] = [];
+
+    for (const cookie of cookies) {
+      const [name, value] = cookie.split("=");
+      if (name === LIKED_POSTS_COOKIE && value) {
+        try {
+          likedPosts = JSON.parse(decodeURIComponent(value));
+        } catch {
+          likedPosts = [];
+        }
+        break;
+      }
+    }
+    
     const count = await getLikeCount(slug);
-    return NextResponse.json({ count });
+    const hasLiked = likedPosts.includes(slug);
+    
+    return NextResponse.json({ count, hasLiked });
   } catch {
     return NextResponse.json(
       { error: "Failed to get like count" },
