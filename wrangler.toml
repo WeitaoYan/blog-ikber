@@ -22,3 +22,10 @@ bucket_name = "blog-images"
 [observability]
 enabled = true
 head_sampling_rate = 1
+
+[vars]
+NEXT_PUBLIC_GISCUS_REPO = "WeitaoYan/blog-ikber"
+NEXT_PUBLIC_GISCUS_REPO_ID = "R_kgDOSOAx0w"
+NEXT_PUBLIC_GISCUS_CATEGORY = "Announcements"
+NEXT_PUBLIC_GISCUS_CATEGORY_ID = "DIC_kwDOSOAx084C7zii"
+R2_PUBLIC_URL = "https://static.ikber.cc"
