@@ -8,5 +8,3 @@ export async function GET() {
     categoryId: process.env.NEXT_PUBLIC_GISCUS_CATEGORY_ID || null,
   });
 }
-
-export const runtime = "edge";

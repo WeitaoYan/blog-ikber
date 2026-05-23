@@ -35,19 +35,15 @@ export default function Giscus() {
         script.setAttribute('data-repo-id', config.repoId);
         script.setAttribute('data-category', config.category);
         script.setAttribute('data-category-id', config.categoryId);
-        script.setAttribute('data-mapping', 'pathname');
-        script.setAttribute('data-strict', '0');
+        script.setAttribute('data-mapping', 'slug');
         script.setAttribute('data-reactions-enabled', '1');
         script.setAttribute('data-emit-metadata', '0');
-        script.setAttribute('data-input-position', 'bottom');
         script.setAttribute('data-theme', 'light');
         script.setAttribute('data-lang', 'zh-CN');
-        script.setAttribute('crossorigin', 'anonymous');
-        script.async = true;
+        script.crossOrigin = 'anonymous';
 
         const container = containerRef.current;
         if (container) {
-          container.innerHTML = '';
           container.appendChild(script);
         }
       } catch {
@@ -59,10 +55,11 @@ export default function Giscus() {
 
     initGiscus();
 
+    // Store the container reference in a local variable before cleanup
+    const currentContainer = containerRef.current;
     return () => {
-      const container = containerRef.current;
-      if (container) {
-        container.innerHTML = '';
+      if (currentContainer) {
+        currentContainer.innerHTML = '';
       }
     };
   }, []);
