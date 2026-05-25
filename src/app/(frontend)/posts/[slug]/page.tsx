@@ -1,6 +1,7 @@
 import { MDXRenderer } from '@/components/MDXRenderer';
 import { LikeButton } from '@/components/LikeButton';
 import { DonateBox } from '@/components/DonateBox';
+import { FontSizeControl } from '@/components/FontSizeControl';
 import Giscus from '@/components/Giscus';
 import { getPostBySlug, getLikeCount } from '@/lib/db';
 import { notFound } from 'next/navigation';
@@ -73,9 +74,11 @@ export default async function PostPage({ params }: PostPageProps) {
         </div>
       </header>
 
-      <div className="prose prose-lg max-w-none mb-12">
-        <MDXRenderer content={post.content} />
-      </div>
+      <FontSizeControl className="mb-12">
+        <div className="prose prose-lg max-w-none">
+          <MDXRenderer content={post.content} />
+        </div>
+      </FontSizeControl>
 
       {tags.length > 0 && (
         <div className="mb-8 flex flex-wrap gap-2">
