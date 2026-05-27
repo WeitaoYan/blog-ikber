@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { UploadMDEditor } from '@/components/UploadMDEditor';
+import { UploadHTMLEditor } from '@/components/UploadHTMLEditor';
 
 interface PostForm {
   title: string;
@@ -361,13 +362,13 @@ export default function EditorPage() {
             {form.format === 'html' ? ' (HTML)' : ' (Markdown)'}
           </label>
           {form.format === 'html' ? (
-            <textarea
-              value={form.content}
-              onChange={(e) => handleFormChange('content', e.target.value)}
-              rows={20}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 font-mono text-sm leading-relaxed"
-              placeholder={'<h1>Hello World</h1>\n<p>Write HTML content here...</p>'}
-            />
+            <div data-color-mode="light">
+              <UploadHTMLEditor
+                value={form.content}
+                onChange={(value) => handleFormChange('content', value)}
+                height={500}
+              />
+            </div>
           ) : (
           <div data-color-mode="light">
             <UploadMDEditor
