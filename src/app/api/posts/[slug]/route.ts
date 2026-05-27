@@ -6,6 +6,7 @@ interface UpdatePostData {
   title?: string;
   slug?: string;
   content?: string;
+  format?: string;
   excerpt?: string;
   tags?: string;
   published?: number;
@@ -82,6 +83,9 @@ export async function PATCH(
         );
       }
       updateData.content = body.content;
+    }
+    if (body.format !== undefined) {
+      updateData.format = body.format;
     }
     if (body.excerpt !== undefined) {
       if (body.excerpt.length > 500) {

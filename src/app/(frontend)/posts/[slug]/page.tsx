@@ -1,4 +1,5 @@
 import { MDXRenderer } from '@/components/MDXRenderer';
+import { HTMLRenderer } from '@/components/HTMLRenderer';
 import { LikeButton } from '@/components/LikeButton';
 import { DonateBox } from '@/components/DonateBox';
 import { FontSizeControl } from '@/components/FontSizeControl';
@@ -75,9 +76,13 @@ export default async function PostPage({ params }: PostPageProps) {
       </header>
 
       <FontSizeControl className="mb-12">
-        <div className="prose prose-lg max-w-none">
-          <MDXRenderer content={post.content} />
-        </div>
+        {post.format === 'html' ? (
+          <HTMLRenderer content={post.content} />
+        ) : (
+          <div className="prose prose-lg max-w-none">
+            <MDXRenderer content={post.content} />
+          </div>
+        )}
       </FontSizeControl>
 
       {tags.length > 0 && (

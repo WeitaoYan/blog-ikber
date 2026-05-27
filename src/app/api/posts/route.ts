@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { title, slug, content, excerpt, tags, published } = body;
+    const { title, slug, content, format, excerpt, tags, published } = body;
 
     // 验证必填字段
     if (!title || !slug || !content) {
@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
       title,
       slug,
       content,
+      format: format || 'markdown',
       excerpt,
       tags: tags ? JSON.stringify(tags) : undefined,
       published: published ? 1 : 0,

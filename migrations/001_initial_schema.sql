@@ -3,7 +3,8 @@ CREATE TABLE IF NOT EXISTS posts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
   slug TEXT UNIQUE NOT NULL,
-  content TEXT NOT NULL,          -- 原始 markdown
+  content TEXT NOT NULL,          -- 原始内容（markdown 或 html）
+  format TEXT DEFAULT 'markdown', -- 'markdown' 或 'html'
   excerpt TEXT,
   tags TEXT,                      -- JSON 数组字符串，如 '["tech","js"]'
   published INTEGER DEFAULT 0,    -- 0 草稿, 1 已发布

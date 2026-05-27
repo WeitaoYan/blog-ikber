@@ -18,6 +18,7 @@ export interface Post {
   title: string;
   slug: string;
   content: string;
+  format: string | null;
   excerpt: string | null;
   tags: string | null;
   published: number;
@@ -190,6 +191,7 @@ export async function createPost(post: {
   title: string;
   slug: string;
   content: string;
+  format?: string;
   excerpt?: string;
   tags?: string;
   published?: number;
@@ -197,12 +199,13 @@ export async function createPost(post: {
   const db = getDB();
   const result = await db
     .prepare(
-      "INSERT INTO posts (title, slug, content, excerpt, tags, published) VALUES (?, ?, ?, ?, ?, ?) RETURNING *",
+      "INSERT INTO posts (title, slug, content, format, excerpt, tags, published) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING *",
     )
     .bind(
       post.title,
       post.slug,
       post.content,
+      post.format || 'markdown',
       post.excerpt || null,
       post.tags || null,
       (post.published ?? 0).toString(),
@@ -217,6 +220,7 @@ export async function updatePost(
     title: string;
     slug: string;
     content: string;
+    format: string;
     excerpt: string;
     tags: string;
     published: number;
@@ -237,6 +241,10 @@ export async function updatePost(
   if (post.content !== undefined) {
     fields.push("content = ?");
     values.push(post.content);
+  }
+  if (post.format !== undefined) {
+    fields.push("format = ?");
+    values.push(post.format);
   }
   if (post.excerpt !== undefined) {
     fields.push("excerpt = ?");

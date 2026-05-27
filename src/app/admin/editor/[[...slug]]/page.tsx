@@ -8,6 +8,7 @@ interface PostForm {
   title: string;
   slug: string;
   content: string;
+  format: 'markdown' | 'html';
   excerpt: string;
   tags: string;
   published: boolean;
@@ -17,6 +18,7 @@ const emptyForm: PostForm = {
   title: '',
   slug: '',
   content: '',
+  format: 'markdown',
   excerpt: '',
   tags: '',
   published: false,
@@ -77,6 +79,7 @@ export default function EditorPage() {
             title: post.title || '',
             slug: post.slug || '',
             content: post.content || '',
+            format: post.format === 'html' ? 'html' : 'markdown',
             excerpt: post.excerpt || '',
             tags: post.tags ? JSON.parse(post.tags).join(', ') : '',
             published: post.published === 1,
@@ -85,6 +88,7 @@ export default function EditorPage() {
             title: post.title || '',
             slug: post.slug || '',
             content: post.content || '',
+            format: post.format === 'html' ? 'html' : 'markdown',
             excerpt: post.excerpt || '',
             tags: post.tags ? JSON.parse(post.tags).join(', ') : '',
             published: post.published === 1,
@@ -199,6 +203,7 @@ export default function EditorPage() {
         title: form.title,
         slug: form.slug,
         content: form.content,
+        format: form.format,
         excerpt: form.excerpt,
         tags,
         published: form.published,
@@ -318,11 +323,52 @@ export default function EditorPage() {
           </p>
         </div>
 
-        {/* Content - Markdown Editor */}
+        {/* Format Selector */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            内容格式
+          </label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => handleFormChange('format', 'markdown')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                form.format === 'markdown'
+                  ? 'bg-primary-600 text-white shadow-sm'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Markdown
+            </button>
+            <button
+              type="button"
+              onClick={() => handleFormChange('format', 'html')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                form.format === 'html'
+                  ? 'bg-primary-600 text-white shadow-sm'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              HTML
+            </button>
+          </div>
+        </div>
+
+        {/* Content Editor */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            内容 (Markdown)
+            内容
+            {form.format === 'html' ? ' (HTML)' : ' (Markdown)'}
           </label>
+          {form.format === 'html' ? (
+            <textarea
+              value={form.content}
+              onChange={(e) => handleFormChange('content', e.target.value)}
+              rows={20}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 font-mono text-sm leading-relaxed"
+              placeholder={'<h1>Hello World</h1>\n<p>Write HTML content here...</p>'}
+            />
+          ) : (
           <div data-color-mode="light">
             <UploadMDEditor
               value={form.content}
@@ -330,6 +376,7 @@ export default function EditorPage() {
               height={500}
             />
           </div>
+          )}
         </div>
 
         {/* Excerpt */}
