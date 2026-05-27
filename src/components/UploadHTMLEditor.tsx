@@ -153,6 +153,20 @@ export function UploadHTMLEditor({ value, onChange, height = 500 }: UploadHTMLEd
 
   return (
     <div className="relative">
+      <style>{`
+        .quill-editor-wrapper > .quill {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+        }
+        .quill-editor-wrapper > .quill > .ql-container {
+          flex: 1;
+          overflow: auto;
+        }
+        .quill-editor-wrapper > .quill > .ql-container > .ql-editor {
+          min-height: 200px;
+        }
+      `}</style>
       <div className="quill-editor-wrapper" style={{ height: `${height}px` }}>
         <QuillEditor
           ref={captureRef}
