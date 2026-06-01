@@ -3,8 +3,9 @@ import { HTMLRenderer } from '@/components/HTMLRenderer';
 import { LikeButton } from '@/components/LikeButton';
 import { DonateBox } from '@/components/DonateBox';
 import { FontSizeControl } from '@/components/FontSizeControl';
+import { PageViewCounter } from '@/components/PageViewCounter';
 import Giscus from '@/components/Giscus';
-import { getPostBySlug, getLikeCount } from '@/lib/db';
+import { getPostBySlug } from '@/lib/db';
 import { notFound } from 'next/navigation';
 
 interface PostPageProps {
@@ -72,6 +73,7 @@ export default async function PostPage({ params }: PostPageProps) {
         <div className="flex items-center gap-4 text-sm text-gray-500">
           <time dateTime={post.updated_at}>{formattedDate}</time>
           <span>{readingTime}</span>
+          <PageViewCounter slug={slug} initialViews={post.views ?? 0} />
         </div>
       </header>
 

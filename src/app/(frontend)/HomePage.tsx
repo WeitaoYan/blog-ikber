@@ -10,6 +10,7 @@ interface PostListItem {
   excerpt: string | null;
   tags: string | null;
   updated_at: string;
+  views?: number;
 }
 
 interface PostsResponse {
@@ -116,6 +117,23 @@ export function HomePage() {
                       <time>
                         {new Date(post.updated_at).toLocaleDateString('zh-CN')}
                       </time>
+                      {post.views !== undefined && (
+                        <span className="inline-flex items-center gap-1">
+                          <svg
+                            className="w-3.5 h-3.5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                          {post.views}
+                        </span>
+                      )}
                       {post.tags && (
                         <div className="flex gap-2">
                           {JSON.parse(post.tags).map((tag: string) => (

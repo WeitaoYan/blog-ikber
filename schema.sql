@@ -45,6 +45,12 @@ CREATE TABLE IF NOT EXISTS likes (
   count INTEGER DEFAULT 0
 );
 
+-- 阅读统计表
+CREATE TABLE IF NOT EXISTS page_views (
+  post_slug TEXT PRIMARY KEY,
+  count INTEGER DEFAULT 0
+);
+
 -- 打赏设置表（博主配置）
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,

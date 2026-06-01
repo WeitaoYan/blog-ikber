@@ -24,6 +24,7 @@ export interface Post {
   published: number;
   created_at: string;
   updated_at: string;
+  views?: number;
 }
 
 export interface PostListItem {
@@ -33,6 +34,7 @@ export interface PostListItem {
   excerpt: string | null;
   tags: string | null;
   updated_at: string;
+  views?: number;
 }
 
 export interface SearchResult {
@@ -116,7 +118,7 @@ export async function getPosts(
 
   let countQuery = "SELECT COUNT(*) as total FROM posts WHERE published = 1";
   let query =
-    "SELECT id, title, slug, excerpt, tags, updated_at FROM posts WHERE published = 1";
+    "SELECT p.id, p.title, p.slug, p.excerpt, p.tags, p.updated_at, COALESCE(pv.count, 0) as views FROM posts p LEFT JOIN page_views pv ON p.slug = pv.post_slug WHERE p.published = 1";
   const params: string[] = [];
 
   if (tag) {
@@ -148,7 +150,7 @@ export async function getPosts(
 export async function getPostBySlug(slug: string): Promise<Post | null> {
   const db = getDB();
   const result = await db
-    .prepare("SELECT * FROM posts WHERE slug = ? AND published = 1")
+    .prepare("SELECT p.*, COALESCE(pv.count, 0) as views FROM posts p LEFT JOIN page_views pv ON p.slug = pv.post_slug WHERE p.slug = ? AND p.published = 1")
     .bind(slug)
     .first<Post>();
   return result || null;
@@ -176,7 +178,7 @@ export async function getAllPostsAdmin(
 
   const postsResult = await db
     .prepare(
-      "SELECT id, title, slug, excerpt, tags, published, updated_at FROM posts ORDER BY updated_at DESC LIMIT ? OFFSET ?",
+      "SELECT p.id, p.title, p.slug, p.excerpt, p.tags, p.published, p.updated_at, COALESCE(pv.count, 0) as views FROM posts p LEFT JOIN page_views pv ON p.slug = pv.post_slug ORDER BY p.updated_at DESC LIMIT ? OFFSET ?",
     )
     .bind(limit.toString(), offset.toString())
     .all<PostListItem & { published: number }>();
@@ -295,6 +297,28 @@ export async function incrementLike(slug: string): Promise<number> {
   const result = await db
     .prepare(
       "INSERT INTO likes (post_slug, count) VALUES (?, 1) ON CONFLICT(post_slug) DO UPDATE SET count = count + 1 RETURNING count",
+    )
+    .bind(slug)
+    .first<{ count: number }>();
+  return result?.count || 0;
+}
+
+// --- Page Views ---
+
+export async function getPageViews(slug: string): Promise<number> {
+  const db = getDB();
+  const result = await db
+    .prepare("SELECT count FROM page_views WHERE post_slug = ?")
+    .bind(slug)
+    .first<{ count: number }>();
+  return result?.count || 0;
+}
+
+export async function incrementPageView(slug: string): Promise<number> {
+  const db = getDB();
+  const result = await db
+    .prepare(
+      "INSERT INTO page_views (post_slug, count) VALUES (?, 1) ON CONFLICT(post_slug) DO UPDATE SET count = count + 1 RETURNING count",
     )
     .bind(slug)
     .first<{ count: number }>();
