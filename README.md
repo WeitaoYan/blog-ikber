@@ -169,12 +169,21 @@ giscus 是一个基于 GitHub Discussions 的评论系统，无需自建后端�
 
 ### 第 4 步：初始化 D1 数据库表
 
+确保你的 D1 数据库 `blog-db` 已创建（第 2.1 步已完成）。然后按顺序创建表：
+
 1. 打开 Cloudflare Dashboard → **Workers & Pages** → **D1** → 点击 `blog-db`
 2. 点击 **控制台 (Console)** 标签页
-3. 将你仓库中 [`schema.sql`](./schema.sql) 的全部内容复制粘贴到控制台中
-4. 点击 **执行**，你会看到成功提示
+3. 将仓库中 `migrations/` 目录下的 SQL 文件，**按编号顺序**逐一复制粘贴到控制台执行：
 
-> 如果执行报错 "already exists"，说明表已经创建过，忽略即可。
+   | 顺序 | 文件 | 说明 |
+   |------|------|------|
+   | ① | [`migrations/001_initial_schema.sql`](./migrations/001_initial_schema.sql) | 文章表、FTS全文搜索、点赞、打赏设置 |
+   | ② | [`migrations/002_add_format_column.sql`](./migrations/002_add_format_column.sql) | 新增 markdown/html 格式列 |
+   | ③ | [`migrations/003_add_page_views.sql`](./migrations/003_add_page_views.sql) | 阅读统计表 |
+
+4. 每粘贴一个，点击 **执行**，确认成功后再执行下一个。
+
+> 如果某条报错 "already exists"，说明该表已存在，忽略即可，继续执行下一份。
 
 ---
 
