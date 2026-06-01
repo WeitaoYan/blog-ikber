@@ -22,7 +22,7 @@
 | 层级     | 技术                                      |
 | -------- | ----------------------------------------- |
 | 框架     | Next.js 15 (App Router)                   |
-| 部署     | Cloudflare Pages + Workers                |
+| 部署     | Cloudflare Workers                        |
 | 数据库   | Cloudflare D1 (SQLite + FTS5)             |
 | 存储     | Cloudflare R2 (图片/二维码对象存储)        |
 | 样式     | Tailwind CSS                              |
@@ -178,20 +178,22 @@ giscus 是一个基于 GitHub Discussions 的评论系统，无需自建后端�
 
 ---
 
-### 第 5 步：创建 Cloudflare Pages 项目并部署
+### 第 5 步：创建 Cloudflare Worker 并部署
 
-1. 打开 Cloudflare Dashboard → **Workers & Pages**
-2. 点击 **创建** → **Pages** → **连接到 Git**
-3. 授权并选择你 Fork 的 `blog-ikber` 仓库
+1. 打开 [Cloudflare Dashboard](https://dash.cloudflare.com) → **Workers & Pages**
+2. 点击 **创建** → 选择 **Worker** → **连接到 Git**
+3. 授权 GitHub，选择你 Fork 的 `blog-ikber` 仓库
 4. 配置构建设置：
 
-   | 设置项         | 值                        |
-   | -------------- | ------------------------- |
-   | 框架预设       | Next.js                   |
-   | 构建命令       | `npm run deploy`          |
-   | 构建输出目录   | `.open-next`              |
+   | 设置项       | 值                      |
+   | ------------ | ----------------------- |
+   | 构建命令     | `npm run build:cf`      |
+   | 构建输出目录 | `.open-next`            |
 
-5. 点击 **环境变量**，添加以下**秘密变量**（务必保密，不要提交到 Git）：
+
+   > ⚠ 此处**不需要**选 "框架预设"（Workers 没有框架预设选项），直接填上面两个值即可。
+
+5. 展开 **环境变量**，添加以下**秘密变量**（务必保密，不要提交到 Git）：
 
    | 变量名            | 值                       |
    | ----------------- | ------------------------ |
@@ -203,25 +205,25 @@ giscus 是一个基于 GitHub Discussions 的评论系统，无需自建后端�
 
 6. 点击 **保存并部署**
 
-7. 首次部署完成后，进入项目设置 → **绑定** → 添加资源绑定：
+7. 首次部署完成后，进入 Worker 项目 → **设置** → **绑定** → 添加资源绑定：
    - **D1 数据库**：变量名 `DB`，选择 `blog-db`
    - **R2 存储桶**：变量名 `MY_BUCKET`，选择 `blog-images`
 
-8. 保存后点击 **重新部署** 以生效绑定。
+8. 保存后会自动重新部署，等待完成即可。
 
 ---
 
 ### 第 6 步：开始使用
 
-部署完成后，Cloudflare 会提供一个 `*.pages.dev` 域名。访问即可：
+部署完成后，Cloudflare 会提供一个 `*.workers.dev` 域名。访问即可：
 
-- **前台首页**：`https://你的项目.pages.dev/` — 文章列表
-- **后台登录**：`https://你的项目.pages.dev/admin/login` — 用你设置的 `ADMIN_USERNAME` / `ADMIN_PASSWORD` 登录
+- **前台首页**：`https://你的项目.你的用户名.workers.dev/` — 文章列表
+- **后台登录**：`https://你的项目.你的用户名.workers.dev/admin/login` — 用你设置的 `ADMIN_USERNAME` / `ADMIN_PASSWORD` 登录
 - **开始写作**：后台 → **新建文章**
 - **设置打赏**：后台 → **设置** → 上传微信/支付宝收款码
-- **RSS 订阅**：`https://你的项目.pages.dev/api/rss`
+- **RSS 订阅**：`https://你的项目.你的用户名.workers.dev/api/rss`
 
-> 💡 可绑定自定义域名：在 Pages 项目 → **自定义域** 中添加即可。
+> 💡 可绑定自定义域名：在 Worker 项目 → **设置** → **触发器** → **自定义域** 中添加即可。
 
 ---
 
@@ -279,7 +281,7 @@ blog-ikber/
 ## 常见问题
 
 ### Q: 部署后页面 404？
-检查 Cloudflare Pages 的构建输出目录是否为 `.open-next`，确认 D1 和 R2 绑定已完成并重新部署。
+检查 Cloudflare Worker 的构建输出目录是否为 `.open-next`，确认 D1 和 R2 绑定已完成并已重新部署。
 
 ### Q: 评论不显示？
 确认已在 GitHub 仓库启用 Discussions，giscus App 已授权，`wrangler.toml` 中的 giscus 参数与 [giscus.app](https://giscus.app) 生成的一致。
@@ -291,7 +293,7 @@ blog-ikber/
 确保已在 D1 控制台中执行了 `schema.sql`，FTS5 虚拟表和触发器已成功创建。
 
 ### Q: 部署后修改了 wrangler.toml，如何生效？
-每次修改 `wrangler.toml` 或其他源码后，Cloudflare Pages 会自动检测 Git 更新并重新部署。
+每次修改 `wrangler.toml` 或其他源码后，Cloudflare Worker 会自动检测 Git 更新并重新部署。
 
 ### Q: D1 控制台执行 SQL 报错 "already exists"？
 正常的。首次执行会创建表，再次执行会提示已存在，不影响使用。
